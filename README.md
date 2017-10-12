@@ -3,8 +3,12 @@ Simple shell toy that I made to learn rust
 
 ## Build
   
-  cargo build
+```
+cargo build
+```
 
 ## Test
-  
-  cargo test
+
+```
+cargo test
+```
