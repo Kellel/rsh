@@ -1,5 +1,8 @@
 use parser;
 
+use std::env;
+use std::path;
+
 struct Builtin {
     name: &'static str,
     func: fn(cmd: parser::Command) -> Result<(),&'static str>
@@ -16,6 +19,10 @@ impl BuiltinManager {
                 Builtin{
                     name: "test",
                     func: builtin_test
+                },
+                Builtin{
+                    name: "cd",
+                    func: builtin_cd
                 }
             )
         }
@@ -43,4 +50,32 @@ impl BuiltinManager {
 fn builtin_test (cmd: parser::Command) -> Result<(),&'static str> {
     println!("TEST: {:?}", cmd.argv);
     Ok(())
+}
+
+fn builtin_cd (cmd: parser::Command) -> Result<(), &'static str> {
+    match cmd.argv.len() {
+        0 => {
+            let home = env::home_dir().expect("Home dir not found");
+            match env::set_current_dir(&home) {
+                Ok(_) => Ok(()),
+                Err(_) => Err("Unable to cd to home")
+            }
+        }
+        1 => {
+            let path = path::Path::new(&cmd.argv[0]);
+            if path.is_relative() {
+                let current = env::current_dir().expect("Failed to get PWD");
+				match env::set_current_dir(&current.join(path)) {
+					Ok(_) => Ok(()),
+					Err(_) => Err("Unable to cd to relative path")
+				}
+            } else {
+				match env::set_current_dir(&path) {
+					Ok(_) => Ok(()),
+					Err(_) => Err("Unable to cd to relative path")
+				}
+            }
+        }
+        _ => Err("Too many arguments")
+    }
 }
