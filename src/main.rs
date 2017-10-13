@@ -25,8 +25,8 @@ fn main() {
         match parser.get_command().expect("Error parsing command") {
             parser::Line::Full(cmd) => {
                 run_command(cmd);
-                io::stdout().flush().unwrap();
                 print!("$ ");
+                io::stdout().flush().unwrap();
             }
             parser::Line::Partial => {
                 print!("> ");
