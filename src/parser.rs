@@ -144,8 +144,10 @@ mod tests {
             parser.parse(c).unwrap();
         }
 
-        let result = parser.parse('\n').unwrap().unwrap();
-        assert_eq!(result, expected)
+        match parser.parse('\n').unwrap() {
+            Line::Full(result) => assert_eq!(result, expected),
+            _ => panic!("Failed to get result from parser on newline")
+        }
     }
 
     #[test]
@@ -169,7 +171,9 @@ mod tests {
             parser.parse(c).unwrap();
         }
 
-        let result = parser.parse('\n').unwrap().unwrap();
-        assert_eq!(result, expected)
+        match parser.parse('\n').unwrap() {
+            Line::Full(result) => assert_eq!(result, expected),
+            _ => panic!("Failed to get result from parser on newline")
+        }
     }
 }
