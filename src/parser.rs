@@ -1,25 +1,75 @@
-use command;
+use std::io;
+use std::io::Read;
+
+#[derive(Debug)]
+#[derive(Clone)]
+pub struct Command {
+    pub cmd: String,
+    pub argv: Vec<String>
+}
+
+impl Command {
+    pub fn new() -> Command {
+        Command{
+            cmd: String::from(""),
+            argv: Vec::new()
+        }
+    }
+}
+
+impl PartialEq for Command {
+    fn eq(&self, other: &Command) -> bool {
+        if self.cmd != other.cmd {
+            println!("CMD DOESN'T MATCH");
+            return false
+        }
+        if self.argv.len() != other.argv.len() {
+            println!("ARGV DOESN'T MATCH");
+            return false
+        }
+        let matches = self.argv.iter().zip(other.argv.iter()).filter(|&(a,b)|a == b).count();
+        matches == self.argv.len()
+    }
+}
 
 pub struct Parser {
-    current: command::Command,
+    current: Command,
     buffer: Vec<char>,
     in_progress: bool,
     escape: bool
 }
 
+pub enum Line {
+    Full(Command),
+    Partial,
+    Empty,
+}
+
 impl Parser {
     pub fn new() -> Parser {
         Parser{
-            current: command::Command::new(),
+            current: Command::new(),
             buffer: Vec::new(),
             in_progress: false,
             escape: false
         }
     }
 
-    pub fn parse(&mut self, input: char) -> Result<Option<command::Command>,&'static str> {
+    pub fn get_command(&mut self) -> Result<Line, &'static str> {
+        for character in io::stdin().chars() {
+            match self.parse(character.expect("Unable to read from stdin")).expect("Parse error") {
+                Line::Full(cmd) => return Ok(Line::Full(cmd)),
+                Line::Partial => return Ok(Line::Partial),
+                Line::Empty => ()
+            }
+        }
+
+        return Ok(Line::Empty)
+    }
+
+    fn parse(&mut self, input: char) -> Result<Line,&'static str> {
         if self.in_progress == false {
-            self.current = command::Command::new();
+            self.current = Command::new();
         }
 
         self.in_progress = true;
@@ -58,12 +108,13 @@ impl Parser {
                             self.buffer = Vec::new();
                         }
                         if self.current.cmd == "" {
-                            return Ok(None)
+                            return Ok(Line::Empty)
                         } else {
-                            return Ok(Some(self.current.clone()))
+                            return Ok(Line::Full(self.current.clone()))
                         }
                     } else {
                         self.escape = false;
+						return Ok(Line::Partial)
                     }
                 }
                 x => {
@@ -71,7 +122,7 @@ impl Parser {
                 }
             }
 
-        Ok(None)
+        Ok(Line::Empty)
     }
 }
 
@@ -82,7 +133,7 @@ mod tests {
     #[test]
     fn basic_parser_test() {
         let input = String::from("echo hello world");
-        let expected = command::Command{
+        let expected = Command{
             cmd: String::from("echo"),
             argv: vec!(String::from("hello"), String::from("world"))
         };
@@ -101,7 +152,7 @@ mod tests {
     fn newline_parser_test() {
         let input = String::from("echo hello world");
         let other_input = String::from("foo");
-        let expected = command::Command{
+        let expected = Command{
             cmd: String::from("echo"),
             argv: vec!(String::from("hello"), String::from("worldfoo"))
         };
